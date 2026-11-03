@@ -159,6 +159,47 @@ empty schema. The `/health` endpoint succeeds only when MySQL is reachable.
 Review Railway's plan and usage limits before provisioning services; do not
 upgrade or enable paid usage without approval.
 
+## Zero-budget demo deployment (Render + external MySQL)
+
+For a no-paid-plan demo, `render.yaml` configures one Render **Free** Python
+web service, an automatically generated Flask secret, the `gunicorn` start
+command, and the database-aware `/health` check. Render documents that free
+web services spin down after 15 idle minutes, have an ephemeral filesystem,
+and share 750 free instance-hours per workspace each month. If a workspace
+has no payment method, usage limits suspend services rather than triggering
+supplementary charges. Render warns that free services are for testing and
+hobby projects, not production applications.
+
+One third-party candidate for an external MySQL database is
+[FreeSQLDatabase.com](https://www.freesqldatabase.com/freemysqldatabase/).
+Its current published free plan advertises actual MySQL, one database, 5 MB
+of storage, and remote connections, with no free-plan expiration date listed.
+Its terms explicitly say uptime is **not guaranteed**, and the provider does
+not publish a maximum-connection limit. Treat this combination as a fragile
+college-project demo only; do not rely on it for important or production
+data. Re-check the live provider terms before use. Aiven is not configured:
+its current public pricing did not verify an ongoing, non-expiring free MySQL
+plan.
+
+To try this setup without adding billing:
+
+1. Sign in to Render and choose **New → Blueprint**; connect this public GitHub
+   repository on the `main` branch.
+2. Review the Blueprint plan and confirm the web service is **Free**. Stop if
+   the dashboard asks for a payment method, billing activation, or an upgrade.
+3. If you independently choose the FreeSQLDatabase.com free tier, create its
+   free account only if the form does not request payment information. Stop
+   if it presents a paid plan or payment prompt. Obtain the MySQL host, port,
+   database, and account details from its official control panel.
+4. Import `database/setup_and_seed.sql` into the provider-created empty
+   database once. Do not run its seed inserts a second time.
+5. Add `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` to the
+   Render service's secret environment-variable editor; never commit them or
+   send the password in chat. Render generates `FLASK_SECRET_KEY`.
+6. Deploy only after confirming the service plan is Free and no billing is
+   enabled. Check `/health` after the first deployment; HTTP 200 confirms the
+   database connection. A sleeping service can take about a minute to wake.
+
 ## Routes
 
 | Method | Path | Purpose |

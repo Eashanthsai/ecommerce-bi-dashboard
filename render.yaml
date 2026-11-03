@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ecommerce-bi-dashboard
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
