@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ status_code }} | E-Commerce BI{% endblock %}
+
+{% block content %}
+<section class="alert alert-warning" role="alert">
+    <h1 class="h4">Unable to complete the request ({{ status_code }})</h1>
+    <p class="mb-0">{{ error_message }}</p>
+    <a class="alert-link d-inline-block mt-2" href="{{ url_for('dashboard') }}">Return to dashboard</a>
+</section>
+{% endblock %}

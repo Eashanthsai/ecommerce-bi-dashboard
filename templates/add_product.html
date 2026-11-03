@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Add Product | E-Commerce BI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="data-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <p class="eyebrow mb-2">CATALOG MANAGEMENT</p>
+                    <h1 class="display-6 fw-semibold mb-0">Add Product</h1>
+                </div>
+                <a class="btn btn-light" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+            </div>
+
+            {% if error_message %}
+            <div class="alert alert-danger" role="alert">
+                {{ error_message }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('add_product_submit') }}" novalidate data-loading-label="Saving product">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="product_name">Product name</label>
+                        <input
+                            class="form-control {% if errors.get('product_name') %}is-invalid{% endif %}"
+                            id="product_name"
+                            name="product_name"
+                            type="text"
+                            maxlength="120"
+                            value="{{ form_data.get('product_name', '') }}"
+                            aria-describedby="product_name_error"
+                            required
+                        >
+                        {% if errors.get('product_name') %}
+                        <div id="product_name_error" class="invalid-feedback d-block">{{ errors['product_name'] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="category">Category</label>
+                        <input
+                            class="form-control {% if errors.get('category') %}is-invalid{% endif %}"
+                            id="category"
+                            name="category"
+                            type="text"
+                            maxlength="80"
+                            value="{{ form_data.get('category', '') }}"
+                            aria-describedby="category_error"
+                            required
+                        >
+                        {% if errors.get('category') %}
+                        <div id="category_error" class="invalid-feedback d-block">{{ errors['category'] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="unit_price">Unit price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input
+                                class="form-control {% if errors.get('unit_price') %}is-invalid{% endif %}"
+                                id="unit_price"
+                                name="unit_price"
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                max="9999999.99"
+                                value="{{ form_data.get('unit_price', '') }}"
+                                aria-describedby="unit_price_error"
+                                required
+                            >
+                        </div>
+                        {% if errors.get('unit_price') %}
+                        <div id="unit_price_error" class="invalid-feedback d-block">{{ errors['unit_price'] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a class="btn btn-light" href="{{ url_for('dashboard') }}">Cancel</a>
+                    <button class="btn btn-primary" type="submit">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Sales Data | E-Commerce BI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <section class="data-card mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                <div>
+                    <p class="eyebrow mb-2">SALES DATA</p>
+                    <h1 class="display-6 fw-semibold mb-2">Upload sales data</h1>
+                    <p class="text-secondary mb-0">Validate and preview a CSV before importing it into MySQL.</p>
+                </div>
+                <a class="btn btn-light" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+            </div>
+            <div class="alert alert-info">
+                CSV only, UTF-8, up to 2 MB and 5,000 item rows. Each row is one product
+                line; lines sharing an order reference are stored in one order. An
+                invalid row blocks the entire import.
+            </div>
+            <p class="small text-secondary">
+                Required columns:
+                <code>order_reference, order_date, order_status, region, product_name,
+                category, quantity, unit_price, discount_amount, returned_quantity,
+                refund_amount</code>.
+                Dates use YYYY-MM-DD, statuses are completed/delivered/cancelled, and
+                amounts are nonnegative decimals with at most two decimal places.
+                Discounts and refunds are line totals; a positive refund requires a
+                positive returned quantity.
+            </p>
+            <a class="btn btn-outline-primary mb-3" href="{{ url_for('download_sample_csv') }}">Download Sample CSV</a>
+            <form method="post" action="{{ url_for('preview_sales_import') }}" enctype="multipart/form-data" data-loading-label="Checking CSV">
+                <label class="form-label fw-semibold" for="file">Sales CSV file</label>
+                <input class="form-control mb-3" id="file" name="file" type="file" accept=".csv,text/csv" required>
+                <button class="btn btn-primary" type="submit">Validate and preview</button>
+            </form>
+        </section>
+
+        {% if errors %}
+        <section class="alert alert-danger" role="alert" aria-label="Validation errors">
+            <h2 class="h5">Import cannot proceed</h2>
+            <p class="mb-2">{{ errors|length }} validation error(s); no data has been committed.</p>
+            <ul class="mb-0">
+                {% for error in errors %}
+                <li>Line {{ error.line }}: {{ error.message }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {% if preview_token %}
+        <section class="data-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="h4 mb-1">CSV preview</h2>
+                    <p class="text-secondary mb-0">{{ preview_count }} validated item row(s); showing up to 25.</p>
+                </div>
+                <span class="badge text-bg-success">Ready for confirmation</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Order reference</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Region</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Qty</th>
+                            <th>Unit price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in preview_rows %}
+                        <tr>
+                            <td>{{ row.order_reference }}</td>
+                            <td>{{ row.order_date }}</td>
+                            <td>{{ row.order_status }}</td>
+                            <td>{{ row.region }}</td>
+                            <td>{{ row.product_name }}</td>
+                            <td>{{ row.category }}</td>
+                            <td>{{ row.quantity }}</td>
+                            <td>${{ "{:,.2f}".format(row.unit_price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <form method="post" action="{{ url_for('confirm_sales_import') }}" data-loading-label="Importing sales data">
+                <input type="hidden" name="preview_token" value="{{ preview_token }}">
+                <button class="btn btn-primary" type="submit">Confirm and import all rows</button>
+            </form>
+            <p class="small text-secondary mt-3 mb-0">
+                Confirmation writes all orders and item rows in one transaction.
+                Re-uploading an identical CSV is prevented by its content fingerprint.
+            </p>
+        </section>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

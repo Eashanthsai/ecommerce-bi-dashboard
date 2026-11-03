@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome | E-Commerce BI{% endblock %}
+
+{% block content %}
+<section class="landing-hero data-card mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-12 col-lg-8">
+            <p class="eyebrow mb-3">ECOMMERCE BUSINESS INTELLIGENCE</p>
+            <h1 class="display-5 fw-semibold mb-3">Make sales data easier to understand.</h1>
+            <p class="lead text-secondary mb-4">
+                Import order data, explore revenue performance, and compare product,
+                category, and regional results in one dashboard.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary btn-lg" href="{{ url_for('import_sales_page') }}">Upload Sales Data</a>
+                <a class="btn btn-outline-primary btn-lg" href="{{ url_for('dashboard') }}">View Dashboard</a>
+                <a class="btn btn-light btn-lg" href="{{ url_for('download_sample_csv') }}">Download Sample CSV</a>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="landing-summary">
+                <p class="eyebrow mb-2">WHAT YOU CAN EXPLORE</p>
+                <ul class="mb-0">
+                    <li>Net revenue and eligible orders</li>
+                    <li>Monthly revenue growth</li>
+                    <li>Best-selling products</li>
+                    <li>Category and region sales mix</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="row g-3" aria-label="Application workflow">
+    <div class="col-12 col-md-4">
+        <article class="insight-card h-100">
+            <p class="eyebrow">01 · IMPORT</p>
+            <h2 class="h5">Review before importing</h2>
+            <p class="text-secondary mb-0">Upload a CSV, check its validation report and preview, then explicitly confirm the transaction.</p>
+        </article>
+    </div>
+    <div class="col-12 col-md-4">
+        <article class="insight-card h-100">
+            <p class="eyebrow">02 · ANALYZE</p>
+            <h2 class="h5">Filter real sales records</h2>
+            <p class="text-secondary mb-0">Use dates, product categories, and regions to focus dashboard KPIs and charts.</p>
+        </article>
+    </div>
+    <div class="col-12 col-md-4">
+        <article class="insight-card h-100">
+            <p class="eyebrow">03 · SHARE</p>
+            <h2 class="h5">Export the current report</h2>
+            <p class="text-secondary mb-0">Download filtered, eligible order-item sales as a CSV report.</p>
+        </article>
+    </div>
+</section>
+{% endblock %}

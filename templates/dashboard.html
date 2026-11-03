@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | E-Commerce BI{% endblock %}
+{% block body_class %}dashboard-body{% endblock %}
+{% block main_class %}dashboard-container dashboard-container--app{% endblock %}
+
+{% block navigation %}
+<aside class="dashboard-sidebar" aria-label="Main navigation">
+    <a class="brand-lockup" href="{{ url_for('dashboard') }}" aria-label="E-Commerce BI dashboard">
+        <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 17.5 9.2 12l3.3 3.2L20 7.5M14.8 7.5H20v5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span><strong>E-Commerce BI</strong><small>BUSINESS INTELLIGENCE</small></span>
+    </a>
+
+    <div class="sidebar-caption">WORKSPACE</div>
+    <nav class="sidebar-nav">
+        <a class="sidebar-link is-active" href="{{ url_for('dashboard') }}" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+            <span>Dashboard</span>
+        </a>
+        <span class="sidebar-link is-disabled" aria-disabled="true" title="Order-level pages are not available in this project yet">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h2l2.1 10.1a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 9H7"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+            <span>Orders</span><span class="nav-soon">API</span>
+        </span>
+        <a class="sidebar-link" href="{{ url_for('add_product_form') }}">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 8.5 4.5v9L12 21l-8.5-4.5v-9L12 3Z"/><path d="m3.8 7.7 8.2 4.5 8.2-4.5M12 12.2V21"/></svg>
+            <span>Products</span>
+        </a>
+        <a class="sidebar-link" href="#analytics">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19.5h16M6.5 16V10m5 6V5m5 11v-4"/></svg>
+            <span>Analytics</span>
+        </a>
+        <a class="sidebar-link" href="{{ url_for('export_sales_csv', start_date=start_date or none, end_date=end_date or none, category=selected_category or none, region=selected_region or none) }}">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3.5h7l4 4v13H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"/><path d="M14 3.5v5h5m-9 4h4m-4 3h6"/></svg>
+            <span>Reports</span>
+        </a>
+        <span class="sidebar-link is-disabled" aria-disabled="true" title="Settings are not available in this project yet">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.1.9-1.5 2.6-1.3-.5a7.9 7.9 0 0 1-1.5.9l-.2 1.4h-3l-.2-1.4a7.9 7.9 0 0 1-1.5-.9l-1.3.5-1.5-2.6 1.1-.9a7 7 0 0 1 0-1.8l-1.1-.9L8 9.8l1.3.5a7.9 7.9 0 0 1 1.5-.9L11 8h3l.2 1.4a7.9 7.9 0 0 1 1.5.9l1.3-.5 1.5 2.6-1.1.9a7 7 0 0 1 0 1.7Z"/></svg>
+            <span>Settings</span><span class="nav-soon">Soon</span>
+        </span>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="sidebar-data-card">
+            <span class="data-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5c0-1.1 3.6-2 8-2s8 .9 8 2-3.6 2-8 2-8-.9-8-2Z"/><path d="M4 6.5v5c0 1.1 3.6 2 8 2m8-7v3"/><path d="M4 11.5v5c0 1.1 3.6 2 8 2"/><circle cx="18" cy="16" r="4"/><path d="m16.5 16 1 1 2-2"/></svg>
+            </span>
+            <span><strong>Live data</strong><small>Connected to your sales database</small></span>
+            <i aria-hidden="true"></i>
+        </div>
+        <div class="sidebar-profile">
+            <span class="profile-avatar" aria-hidden="true">BI</span>
+            <span><strong>Business workspace</strong><small>Analytics overview</small></span>
+        </div>
+    </div>
+</aside>
+<button class="sidebar-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+    <span></span><span></span><span></span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <div class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-context"><span class="status-dot"></span> Your store at a glance</div>
+            <div class="topbar-date">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17"/></svg>
+                <time data-current-date>Loading date...</time>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <section class="welcome-row">
+                <div>
+                    <p class="eyebrow mb-2">OVERVIEW <span>/</span> BUSINESS PERFORMANCE</p>
+                    <h1>Welcome to Your Business Dashboard</h1>
+                    <p class="welcome-subtitle">Track your sales performance and discover business insights.</p>
+                </div>
+                <a class="button-primary" href="{{ url_for('import_sales_page') }}">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+                    Upload sales data
+                </a>
+            </section>
+
+            <form class="filter-panel dashboard-filters" method="get" action="{{ url_for('dashboard') }}" data-loading-label="Updating dashboard">
+                <div class="filter-heading">
+                    <span class="filter-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M7 12h10m-7 6h4"/></svg>
+                    </span>
+                    <span><strong>Refine your view</strong><small>Filter dashboard data</small></span>
+                </div>
+                <label class="filter-field">
+                    <span>Date from</span>
+                    <input class="form-control" type="date" id="start_date" name="start_date" value="{{ start_date }}">
+                </label>
+                <label class="filter-field">
+                    <span>Date to</span>
+                    <input class="form-control" type="date" id="end_date" name="end_date" value="{{ end_date }}">
+                </label>
+                <label class="filter-field">
+                    <span>Category</span>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All categories</option>
+                        {% for category in filter_options.categories %}
+                        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="filter-field">
+                    <span>Region</span>
+                    <select class="form-select" id="region" name="region">
+                        <option value="">All regions</option>
+                        {% for region in filter_options.regions %}
+                        <option value="{{ region }}" {% if region == selected_region %}selected{% endif %}>{{ region }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button class="button-primary filter-submit" type="submit">Apply filters</button>
+                {% if start_date or end_date or selected_category or selected_region %}
+                <a class="filter-clear" href="{{ url_for('dashboard') }}">Clear</a>
+                {% endif %}
+            </form>
+
+            <section class="kpi-section" aria-label="Key performance indicators">
+                <div class="section-heading">
+                    <div><h2>Performance snapshot</h2><p>Key performance indicators for this period</p></div>
+                    <span class="period-pill"><span></span>{% if start_date or end_date %}Filtered period{% else %}All available dates{% endif %}</span>
+                </div>
+                <div class="kpi-grid">
+                    <article class="kpi-card kpi-sales">
+                        <div class="kpi-top"><span class="kpi-label">GROSS SALES</span><span class="kpi-icon">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7.5h16v12H4zM4 7.5l2-3h12l2 3M8 12h8m-8 3.5h5"/></svg>
+                        </span></div>
+                        <p class="kpi-value">{% if analytics.summary.gross_sales is defined %}${{ "{:,.2f}".format(analytics.summary.gross_sales) }}{% else %}N/A{% endif %}</p>
+                        <p class="kpi-note">Total value before discounts and refunds</p>
+                        <span class="kpi-accent"></span>
+                    </article>
+                    <article class="kpi-card kpi-net">
+                        <div class="kpi-top"><span class="kpi-label">NET SALES</span><span class="kpi-icon">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17.5 9 12l3.5 3.5L20 7.5M15 7.5h5v5"/></svg>
+                        </span></div>
+                        <p class="kpi-value">${{ "{:,.2f}".format(analytics.summary.net_sales) }}</p>
+                        <p class="kpi-note">After discounts and recorded refunds</p>
+                        <span class="kpi-accent"></span>
+                    </article>
+                    <article class="kpi-card kpi-orders">
+                        <div class="kpi-top"><span class="kpi-label">ELIGIBLE ORDERS</span><span class="kpi-icon">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v16H5zM8.5 9h7m-7 3.5h7m-7 3.5h4"/></svg>
+                        </span></div>
+                        <p class="kpi-value">{{ "{:,}".format(analytics.summary.eligible_order_count) }}</p>
+                        <p class="kpi-note">Completed and delivered orders</p>
+                        <span class="kpi-accent"></span>
+                    </article>
+                    <article class="kpi-card kpi-aov">
+                        <div class="kpi-top"><span class="kpi-label">AVERAGE ORDER VALUE</span><span class="kpi-icon">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 9.2c-.6-.7-1.5-1-2.8-1-1.4 0-2.4.7-2.4 1.7 0 2.7 5.2 1.1 5.2 4 0 1.2-1.1 2-2.8 2-1.2 0-2.3-.4-3-1.2M12.5 6.5v11"/></svg>
+                        </span></div>
+                        <p class="kpi-value">{% if analytics.summary.average_order_value is not none %}${{ "{:,.2f}".format(analytics.summary.average_order_value) }}{% else %}N/A{% endif %}</p>
+                        <p class="kpi-note">Net sales per eligible order</p>
+                        <span class="kpi-accent"></span>
+                    </article>
+                </div>
+                <div class="snapshot-footer">
+                    <span>Catalog</span><strong>{{ "{:,}".format(product_count) }} products</strong>
+                    {% if selected_category %}<span class="catalog-context">in {{ selected_category }}</span>{% else %}<span class="catalog-context">available in your store</span>{% endif %}
+                    {% if analytics.month_over_month_growth.status == "calculated" %}
+                    <span class="growth-summary"><span class="growth-indicator">{% if analytics.month_over_month_growth.growth_percent >= 0 %}↗{% else %}↘{% endif %}</span><strong>{{ "{:+.2f}".format(analytics.month_over_month_growth.growth_percent) }}%</strong> month-over-month revenue</span>
+                    {% endif %}
+                    {% if start_date or end_date %}<span class="period-note">Revenue reflects the selected date range; boundary months may be partial.</span>{% endif %}
+                </div>
+            </section>
+
+            <section id="analytics" class="analytics-section" aria-label="Sales analytics">
+                <div class="section-heading">
+                    <div><h2>Sales analytics</h2><p>Explore how your revenue moves over time</p></div>
+                    <span class="chart-units">USD <span>·</span> Cancelled orders excluded</span>
+                </div>
+                {% set category_chart_description = "Net sales for the selected category." if selected_category else "Net sales across categories." %}
+                {% set region_chart_description = "Net sales for the selected region." if selected_region else "Compare net revenue across regions." %}
+                {% if selected_region %}{% set category_chart_description = category_chart_description ~ " Within " ~ selected_region ~ "." %}{% endif %}
+                {% if selected_category %}{% set region_chart_description = region_chart_description ~ " Within " ~ selected_category ~ "." %}{% endif %}
+                <div class="chart-grid">
+                    <article class="chart-card chart-card--main">
+                        <div class="chart-heading">
+                            <div><span class="chart-kicker">REVENUE</span><h3>Monthly revenue trend</h3><p>Net revenue across each month in your selected period</p></div>
+                            <span class="chart-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17.5 9 12l3.5 3.5L20 7.5M15 7.5h5v5"/></svg></span>
+                        </div>
+                        <div class="chart-visual">
+                            <img class="chart-image" src="{{ url_for('chart_image', chart_name='monthly-revenue', start_date=start_date or none, end_date=end_date or none, category=selected_category or none, region=selected_region or none) }}" alt="Monthly revenue trend chart" loading="lazy">
+                            <div class="chart-fallback" hidden role="status"><p class="mb-0">This chart could not be loaded. Refresh the page to try again.</p></div>
+                        </div>
+                    </article>
+                    <article class="chart-card chart-card--category">
+                        <div class="chart-heading">
+                            <div><span class="chart-kicker">SALES MIX</span><h3>Sales by category</h3><p>{{ category_chart_description }}</p></div>
+                            <span class="chart-heading-icon chart-heading-icon--violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5v8.7h8.7A8.7 8.7 0 1 1 12 3.5Z"/><path d="M15.5 3.8a8.7 8.7 0 0 1 4.7 4.7h-4.7V3.8Z"/></svg></span>
+                        </div>
+                        <div class="chart-visual">
+                            <img class="chart-image" src="{{ url_for('chart_image', chart_name='category-sales', start_date=start_date or none, end_date=end_date or none, category=selected_category or none, region=selected_region or none) }}" alt="Net sales by category chart" loading="lazy">
+                            <div class="chart-fallback" hidden role="status"><p class="mb-0">This chart could not be loaded. Refresh the page to try again.</p></div>
+                        </div>
+                    </article>
+                    <article class="chart-card chart-card--region">
+                        <div class="chart-heading">
+                            <div><span class="chart-kicker">GEOGRAPHY</span><h3>Sales by region</h3><p>{{ region_chart_description }}</p></div>
+                            <span class="chart-heading-icon chart-heading-icon--teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 10.2c0 5.5-8 10.3-8 10.3S4 15.7 4 10.2a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+                        </div>
+                        <div class="chart-visual">
+                            <img class="chart-image" src="{{ url_for('chart_image', chart_name='region-sales', start_date=start_date or none, end_date=end_date or none, category=selected_category or none, region=selected_region or none) }}" alt="Net sales by region chart" loading="lazy">
+                            <div class="chart-fallback" hidden role="status"><p class="mb-0">This chart could not be loaded. Refresh the page to try again.</p></div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="insights-section" aria-label="Business insights">
+                <div class="section-heading">
+                    <div><h2>Business insights</h2><p>Observations from your selected sales data</p></div>
+                </div>
+                {% if analytics.insights %}
+                <div class="insights-grid">
+                    {% for insight in analytics.insights %}
+                    <article class="insight-card">
+                        <span class="insight-mark" aria-hidden="true">✦</span>
+                        <div><p class="eyebrow">{{ insight.title }}</p><p class="insight-copy">{{ insight.message }}</p></div>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state empty-state--compact">No eligible sales are available to generate insights for these filters.</div>
+                {% endif %}
+            </section>
+
+            <section class="data-section" aria-label="Product performance">
+                <div class="section-heading">
+                    <div><h2>Product performance</h2><p>What customers are buying most</p></div>
+                    <span class="table-caption">Based on eligible order quantities</span>
+                </div>
+                <article class="data-card" id="products">
+                    <div class="data-card-heading"><div><h3>Top 5 best-selling products</h3><p>Ranked by quantity sold in the selected period</p></div><span class="mini-badge">TOP PRODUCTS</span></div>
+                    {% if analytics.top_products %}
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th scope="col">#</th><th scope="col">Product</th><th scope="col">Category</th><th class="text-end" scope="col">Quantity sold</th><th class="text-end" scope="col">Net revenue</th></tr></thead>
+                            <tbody>{% for product in analytics.top_products %}
+                                <tr><th class="rank-cell" scope="row"><span>{{ "%02d"|format(loop.index) }}</span></th><td class="product-cell">{{ product.product_name }}</td><td><span class="category-pill">{{ product.category }}</span></td><td class="text-end">{{ "{:,}".format(product.total_quantity) }}</td><td class="text-end amount-cell">${{ "{:,.2f}".format(product.revenue) }}</td></tr>
+                            {% endfor %}</tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state"><span class="empty-state-icon" aria-hidden="true">↗</span><strong>No product sales yet</strong><span>No qualifying sales for this date range.</span></div>
+                    {% endif %}
+                </article>
+            </section>
+
+            <section class="details-section" aria-label="Revenue details">
+                <div class="section-heading">
+                    <div><h2>Revenue details</h2><p>A closer look at the numbers behind your performance</p></div>
+                    <span class="chart-units">Gross sales − discounts − refunds = net sales</span>
+                </div>
+                <div class="details-grid">
+                    <article class="data-card detail-card">
+                        <div class="data-card-heading"><div><h3>Monthly revenue and growth</h3><p>Month-by-month net sales performance</p></div></div>
+                        {% if analytics.monthly_revenue %}
+                        <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th scope="col">Month</th><th class="text-end" scope="col">Net revenue</th><th class="text-end" scope="col">Growth</th></tr></thead><tbody>
+                            {% for month in analytics.monthly_revenue %}<tr><th scope="row">{{ month.month }}</th><td class="text-end amount-cell">${{ "{:,.2f}".format(month.revenue) }}</td><td class="text-end">{% if month.month_over_month_growth_percent is not none %}<span class="growth-cell">{{ "{:+.2f}".format(month.month_over_month_growth_percent) }}%</span>{% else %}<span class="text-secondary">N/A</span>{% endif %}</td></tr>{% endfor %}
+                        </tbody></table></div>
+                        {% else %}<div class="empty-state empty-state--compact">No eligible revenue for this date range.</div>{% endif %}
+                        {% if analytics.month_over_month_growth.status == "calculated" %}
+                        <div class="comparison-note"><span class="growth-indicator">{% if analytics.month_over_month_growth.growth_percent >= 0 %}↗{% else %}↘{% endif %}</span><span><strong>MOM REVENUE GROWTH</strong><small>{{ analytics.month_over_month_growth.current_month }}: ${{ "{:,.2f}".format(analytics.month_over_month_growth.current_revenue) }} <span>vs.</span> {{ analytics.month_over_month_growth.previous_month }}: ${{ "{:,.2f}".format(analytics.month_over_month_growth.previous_revenue) }}</small></span><b>{{ "{:+.2f}".format(analytics.month_over_month_growth.growth_percent) }}%</b></div>
+                        {% elif analytics.month_over_month_growth.status == "zero_previous_month_revenue" %}
+                        <div class="comparison-note comparison-note--muted"><span class="growth-indicator">—</span><span><strong>MOM REVENUE GROWTH</strong><small>No previous-month revenue to compare</small></span><b>N/A</b></div>
+                        {% elif analytics.month_over_month_growth.current_month %}
+                        <div class="comparison-note comparison-note--muted"><span class="growth-indicator">—</span><span><strong>MOM REVENUE GROWTH</strong><small>Insufficient monthly history</small></span><b>N/A</b></div>
+                        {% endif %}
+                    </article>
+                    <article class="data-card detail-card">
+                        <div class="data-card-heading"><div><h3>Sales by category</h3><p>Net sales grouped by product category</p></div></div>
+                        {% if analytics.category_sales %}
+                        <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th scope="col">Category</th><th class="text-end" scope="col">Net sales</th></tr></thead><tbody>
+                            {% for row in analytics.category_sales %}<tr><th scope="row">{{ row.category }}</th><td class="text-end amount-cell">${{ "{:,.2f}".format(row.net_sales) }}</td></tr>{% endfor %}
+                        </tbody></table></div>
+                        {% else %}<div class="empty-state empty-state--compact">No category sales for this date range.</div>{% endif %}
+                    </article>
+                    <article class="data-card detail-card detail-card--wide">
+                        <div class="data-card-heading"><div><h3>Sales by region</h3><p>Gross sales, discounts, refunds and net sales by region</p></div></div>
+                        {% if analytics.region_sales %}
+                        <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th scope="col">Region</th><th class="text-end" scope="col">Gross sales</th><th class="text-end" scope="col">Discounts</th><th class="text-end" scope="col">Refunds</th><th class="text-end" scope="col">Net sales</th></tr></thead><tbody>
+                            {% for row in analytics.region_sales %}<tr><th scope="row">{{ row.region }}</th><td class="text-end">${{ "{:,.2f}".format(row.gross_sales) }}</td><td class="text-end">${{ "{:,.2f}".format(row.discounts) }}</td><td class="text-end">${{ "{:,.2f}".format(row.refunds) }}</td><td class="text-end amount-cell">${{ "{:,.2f}".format(row.net_sales) }}</td></tr>{% endfor %}
+                        </tbody></table></div>
+                        {% else %}<div class="empty-state empty-state--compact">No regional sales for this date range.</div>{% endif %}
+                    </article>
+                </div>
+            </section>
+
+            <footer class="dashboard-footer">
+                <span class="footer-mark" aria-hidden="true">↗</span>
+                <p>Net sales include completed and delivered orders only. Discounts and recorded refunds are deducted once; taxes and shipping are excluded.</p>
+            </footer>
+        </div>
+    </div>
+</div>
+{% endblock %}
