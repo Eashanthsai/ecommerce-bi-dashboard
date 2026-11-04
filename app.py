@@ -3,6 +3,7 @@
 import os
 import csv
 import time
+import secrets
 from uuid import uuid4
 from io import StringIO
 from datetime import date, datetime
@@ -30,7 +31,19 @@ def create_app():
     app = Flask(__name__)
     secret_key = os.getenv("FLASK_SECRET_KEY")
     if not secret_key:
-        raise RuntimeError("FLASK_SECRET_KEY must be configured in the environment.")
+        if (
+            os.getenv("VERCEL_ENV") == "production"
+            or os.getenv("FLASK_ENV") == "production"
+            or os.getenv("ENVIRONMENT") == "production"
+        ):
+            raise RuntimeError(
+                "FLASK_SECRET_KEY must be configured in the production environment."
+            )
+        secret_key = secrets.token_hex(32)
+        app.logger.warning(
+            "FLASK_SECRET_KEY was missing; generated a temporary development secret. "
+            "Set a stable value in the hosting environment for production use."
+        )
     app.secret_key = secret_key
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES
     staged_imports = {}

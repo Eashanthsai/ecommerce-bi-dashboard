@@ -126,6 +126,19 @@ To run automated tests:
 python -m pytest -q
 ```
 
+## Vercel deployment
+
+This repository includes a Vercel entry point in [`vercel.json`](vercel.json). The app is served from `app.py` and exposes the Flask WSGI object as `app`, so Vercel can import it as a Python web function. Configure these environment variables in the Vercel project settings:
+
+- `FLASK_SECRET_KEY` — generate a strong random value locally and store it only in the hosting platform
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+
+The app generates an ephemeral key only for local development. It refuses to start in production if `FLASK_SECRET_KEY` is missing, preventing session keys from changing between serverless requests. Set a stable, randomly generated key in the Vercel Production environment; never put it in source control or expose it in logs. Provide the MySQL settings only when the existing remote MySQL credentials are available; the app does not replace or migrate the database.
+
 ## Railway deployment
 
 The repository includes `railway.json` with the production command
