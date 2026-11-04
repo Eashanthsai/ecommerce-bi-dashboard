@@ -21,6 +21,7 @@
             {% endif %}
 
             <form method="post" action="{{ url_for('add_product_submit') }}" novalidate data-loading-label="Saving product">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label fw-semibold" for="product_name">Product name</label>

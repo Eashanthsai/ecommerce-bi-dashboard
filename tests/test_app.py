@@ -7,9 +7,29 @@ from unittest.mock import patch
 
 import mysql.connector
 import pytest
+from flask.testing import FlaskClient
 
 import analysis
 from app import app
+
+
+class AuthenticatedTestClient(FlaskClient):
+    def open(self, *args, **kwargs):
+        with self.session_transaction() as test_session:
+            test_session["authenticated"] = True
+            test_session["csrf_token"] = "test-csrf-token"
+
+        if kwargs.get("method", "GET").upper() == "POST":
+            data = kwargs.get("data")
+            if data is None:
+                kwargs["data"] = {"csrf_token": "test-csrf-token"}
+            elif isinstance(data, dict):
+                data.setdefault("csrf_token", "test-csrf-token")
+
+        return super().open(*args, **kwargs)
+
+
+app.test_client_class = AuthenticatedTestClient
 
 
 @pytest.fixture(autouse=True)

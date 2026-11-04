@@ -31,6 +31,7 @@
             </p>
             <a class="btn btn-outline-primary mb-3" href="{{ url_for('download_sample_csv') }}">Download Sample CSV</a>
             <form method="post" action="{{ url_for('preview_sales_import') }}" enctype="multipart/form-data" data-loading-label="Checking CSV">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <label class="form-label fw-semibold" for="file">Sales CSV file</label>
                 <input class="form-control mb-3" id="file" name="file" type="file" accept=".csv,text/csv" required>
                 <button class="btn btn-primary" type="submit">Validate and preview</button>
@@ -89,6 +90,7 @@
                 </table>
             </div>
             <form method="post" action="{{ url_for('confirm_sales_import') }}" data-loading-label="Importing sales data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="preview_token" value="{{ preview_token }}">
                 <button class="btn btn-primary" type="submit">Confirm and import all rows</button>
             </form>

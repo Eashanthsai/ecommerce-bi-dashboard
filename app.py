@@ -4,14 +4,18 @@ import os
 import csv
 import time
 import secrets
+import hmac
 from uuid import uuid4
 from io import StringIO
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
+from threading import Lock
+from urllib.parse import urlsplit
 
 import mysql.connector
-from flask import Flask, Response, abort, flash, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Flask, Response, abort, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
+from werkzeug.security import check_password_hash
 
 import analysis
 import charts
@@ -25,28 +29,165 @@ MAX_LIMIT = 500
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 MAX_STAGED_IMPORTS = 50
 STAGED_IMPORT_TTL_SECONDS = 30 * 60
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_ATTEMPT_WINDOW_SECONDS = 15 * 60
 
 
 def create_app():
     app = Flask(__name__)
     secret_key = os.getenv("FLASK_SECRET_KEY")
     if not secret_key:
-        if (
-            os.getenv("VERCEL_ENV") == "production"
-            or os.getenv("FLASK_ENV") == "production"
-            or os.getenv("ENVIRONMENT") == "production"
-        ):
-            raise RuntimeError(
-                "FLASK_SECRET_KEY must be configured in the production environment."
-            )
-        secret_key = secrets.token_hex(32)
-        app.logger.warning(
-            "FLASK_SECRET_KEY was missing; generated a temporary development secret. "
-            "Set a stable value in the hosting environment for production use."
+        raise RuntimeError("FLASK_SECRET_KEY must be configured in the environment.")
+    dashboard_username = os.getenv("DASHBOARD_USERNAME")
+    dashboard_password_hash = os.getenv("DASHBOARD_PASSWORD_HASH")
+    if not dashboard_username or not dashboard_password_hash:
+        raise RuntimeError(
+            "DASHBOARD_USERNAME and DASHBOARD_PASSWORD_HASH must be configured."
         )
     app.secret_key = secret_key
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = os.getenv(
+        "SESSION_COOKIE_SECURE",
+        "true"
+        if os.getenv("VERCEL_ENV") == "production"
+        or os.getenv("FLASK_ENV") == "production"
+        or os.getenv("ENVIRONMENT") == "production"
+        else "false",
+    ).lower() in {"1", "true", "yes"}
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
+    app.config["SESSION_REFRESH_EACH_REQUEST"] = False
     staged_imports = {}
+    login_attempts = {}
+    login_attempts_lock = Lock()
+
+    def safe_redirect_target(target):
+        if not target:
+            return url_for("dashboard")
+        parsed = urlsplit(target)
+        if (
+            parsed.scheme
+            or parsed.netloc
+            or not parsed.path.startswith("/")
+            or parsed.path.startswith("//")
+            or "\\" in target
+        ):
+            return url_for("dashboard")
+        return target
+
+    @app.context_processor
+    def inject_csrf_token():
+        return {"csrf_token": session.get("csrf_token", "")}
+
+    @app.before_request
+    def protect_application():
+        if request.endpoint == "static" or request.endpoint in {"login", "health"}:
+            return None
+
+        if request.endpoint != "login_submit":
+            if session.get("authenticated") is not True:
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "Authentication required."}), 401
+                return redirect(url_for("login", next=request.full_path.rstrip("?")))
+
+        if request.method == "POST":
+            submitted_token = (
+                request.form.get("csrf_token")
+                or request.headers.get("X-CSRF-Token")
+                or ""
+            )
+            expected_token = session.get("csrf_token", "")
+            if not expected_token or not hmac.compare_digest(
+                submitted_token, expected_token
+            ):
+                return error_response(
+                    400, "The form expired. Reload the page and try again."
+                )
+        return None
+
+    @app.after_request
+    def set_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
+
+    @app.get("/login")
+    def login():
+        if session.get("authenticated") is True:
+            return redirect(url_for("dashboard"))
+        session.setdefault("csrf_token", secrets.token_urlsafe(32))
+        return render_template(
+            "login.html",
+            error_message=None,
+            next_url=request.args.get("next", ""),
+        )
+
+    @app.post("/login")
+    def login_submit():
+        client_key = request.remote_addr or "unknown"
+        now = time.monotonic()
+        with login_attempts_lock:
+            attempts = login_attempts.get(client_key)
+            if (
+                attempts is not None
+                and now - attempts["started_at"] >= LOGIN_ATTEMPT_WINDOW_SECONDS
+            ):
+                del login_attempts[client_key]
+                attempts = None
+            if attempts is not None and attempts["count"] >= MAX_LOGIN_ATTEMPTS:
+                session.setdefault("csrf_token", secrets.token_urlsafe(32))
+                return (
+                    render_template(
+                        "login.html",
+                        error_message="Too many sign-in attempts. Try again later.",
+                        next_url=request.form.get("next", ""),
+                    ),
+                    429,
+                )
+
+        submitted_username = request.form.get("username", "")
+        submitted_password = request.form.get("password", "")
+        username_matches = hmac.compare_digest(
+            submitted_username.encode("utf-8"),
+            dashboard_username.encode("utf-8"),
+        )
+        password_matches = check_password_hash(
+            dashboard_password_hash, submitted_password
+        )
+        if not (username_matches and password_matches):
+            with login_attempts_lock:
+                attempts = login_attempts.get(client_key)
+                if attempts is None:
+                    login_attempts[client_key] = {
+                        "started_at": now,
+                        "count": 1,
+                    }
+                else:
+                    attempts["count"] += 1
+            session.setdefault("csrf_token", secrets.token_urlsafe(32))
+            return (
+                render_template(
+                    "login.html",
+                    error_message="The username or password was incorrect.",
+                    next_url=request.form.get("next", ""),
+                ),
+                401,
+            )
+
+        with login_attempts_lock:
+            login_attempts.pop(client_key, None)
+        session.clear()
+        session["authenticated"] = True
+        session["csrf_token"] = secrets.token_urlsafe(32)
+        session.permanent = True
+        return redirect(safe_redirect_target(request.form.get("next", "")))
+
+    @app.post("/logout")
+    def logout():
+        session.clear()
+        return redirect(url_for("login"))
 
     @app.errorhandler(RequestEntityTooLarge)
     def upload_too_large(_error):
@@ -123,28 +264,33 @@ def create_app():
     def home():
         return render_template("landing.html")
 
-    @app.get("/dashboard")
-    def dashboard():
+    def dashboard_context():
         date_range, error = parse_date_range()
         if error:
             return (
-                render_template(
-                    "error.html",
-                    error_message=error,
-                    status_code=400,
+                None,
+                (
+                    render_template(
+                        "error.html",
+                        error_message=error,
+                        status_code=400,
+                    ),
+                    400,
                 ),
-                400,
             )
         filter_options = database.fetch_filter_options()
         dimension_filters, error = parse_dimension_filters(filter_options)
         if error:
             return (
-                render_template(
-                    "error.html",
-                    error_message=error,
-                    status_code=400,
+                None,
+                (
+                    render_template(
+                        "error.html",
+                        error_message=error,
+                        status_code=400,
+                    ),
+                    400,
                 ),
-                400,
             )
         query_filters = {
             **date_range,
@@ -163,17 +309,114 @@ def create_app():
             if dimension_filters["category"] is not None
             else database.fetch_product_count()
         )
+        return {
+            "analytics": report,
+            "product_count": product_count,
+            "start_date": request.args.get("start_date", ""),
+            "end_date": request.args.get("end_date", ""),
+            "filters": date_range,
+            "filter_options": filter_options,
+            "selected_category": dimension_filters["category"] or "",
+            "selected_region": dimension_filters["region"] or "",
+        }, None
+
+    @app.get("/dashboard")
+    def dashboard():
+        context, error = dashboard_context()
+        if error:
+            return error
+        return render_template("dashboard.html", **context, active_nav="dashboard")
+
+    @app.get("/analytics")
+    def analytics_page():
+        context, error = dashboard_context()
+        if error:
+            return error
+        return render_template("dashboard.html", **context, active_nav="analytics")
+
+    @app.get("/orders")
+    def orders_page():
+        date_range, error = parse_date_range()
+        if error:
+            return render_template(
+                "error.html", error_message=error, status_code=400
+            ), 400
+
+        filter_options = database.fetch_filter_options()
+        region = request.args.get("region", "").strip()
+        if region and region not in filter_options["regions"]:
+            return render_template(
+                "error.html",
+                error_message="Invalid region filter.",
+                status_code=400,
+            ), 400
+
+        status = request.args.get("status", "").strip()
+        statuses = database.fetch_order_statuses()
+        if status and status not in statuses:
+            return render_template(
+                "error.html",
+                error_message="Invalid order status filter.",
+                status_code=400,
+            ), 400
+
+        pagination, error = get_pagination()
+        if error:
+            return error
+        limit, offset = pagination
+        orders, order_count = database.fetch_orders(
+            start_date=date_range["start_date"],
+            end_date=date_range["end_date"],
+            status=status or None,
+            region=region or None,
+            limit=limit,
+            offset=offset,
+        )
         return render_template(
-            "dashboard.html",
-            analytics=report,
-            product_count=product_count,
+            "orders.html",
+            active_nav="orders",
+            orders=orders,
+            order_count=order_count,
+            statuses=statuses,
+            regions=filter_options["regions"],
             start_date=request.args.get("start_date", ""),
             end_date=request.args.get("end_date", ""),
-            filters=date_range,
-            filter_options=filter_options,
-            selected_category=dimension_filters["category"] or "",
-            selected_region=dimension_filters["region"] or "",
+            selected_status=status,
+            selected_region=region,
+            limit=limit,
+            offset=offset,
         )
+
+    @app.get("/products")
+    def products_page():
+        pagination, error = get_pagination()
+        if error:
+            return error
+        limit, offset = pagination
+        products = database.fetch_all(
+            """
+            SELECT product_id, product_name, category, unit_price
+            FROM products
+            ORDER BY product_name, product_id
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        return render_template(
+            "products.html",
+            active_nav="products",
+            products=products,
+            product_count=database.fetch_product_count(),
+            limit=limit,
+            offset=offset,
+        )
+
+    @app.get("/reports")
+    def reports_page():
+        context, error = dashboard_context()
+        if error:
+            return error
+        return render_template("reports.html", **context, active_nav="reports")
 
     @app.get("/imports")
     def import_sales_page():

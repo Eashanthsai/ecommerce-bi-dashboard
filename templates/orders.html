@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Orders | E-Commerce BI{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <div class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-context"><span class="status-dot"></span> Order management</div>
+            <div class="topbar-date">{{ "{:,}".format(order_count) }} orders</div>
+        </header>
+        <div class="dashboard-content">
+            <section class="welcome-row">
+                <div>
+                    <p class="eyebrow mb-2">WORKSPACE <span>/</span> ORDERS</p>
+                    <h1>Orders</h1>
+                    <p class="welcome-subtitle">Review orders and their item counts from your sales database.</p>
+                </div>
+            </section>
+
+            <form class="filter-panel dashboard-filters" method="get" action="{{ url_for('orders_page') }}">
+                <label class="filter-field">
+                    <span>Date from</span>
+                    <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
+                </label>
+                <label class="filter-field">
+                    <span>Date to</span>
+                    <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+                </label>
+                <label class="filter-field">
+                    <span>Status</span>
+                    <select class="form-select" name="status">
+                        <option value="">All statuses</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}" {% if status == selected_status %}selected{% endif %}>{{ status|title }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="filter-field">
+                    <span>Region</span>
+                    <select class="form-select" name="region">
+                        <option value="">All regions</option>
+                        {% for region in regions %}
+                        <option value="{{ region }}" {% if region == selected_region %}selected{% endif %}>{{ region }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <input type="hidden" name="limit" value="{{ limit }}">
+                <button class="button-primary filter-submit" type="submit">Apply filters</button>
+                {% if start_date or end_date or selected_status or selected_region %}
+                <a class="filter-clear" href="{{ url_for('orders_page') }}">Clear</a>
+                {% endif %}
+            </form>
+
+            <section class="data-section" aria-label="Orders">
+                <div class="section-heading">
+                    <div><h2>Order records</h2><p>{{ "{:,}".format(order_count) }} matching orders</p></div>
+                    <span class="table-caption">Newest orders first</span>
+                </div>
+                <article class="data-card">
+                    {% if orders %}
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th scope="col">Order</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Region</th><th class="text-end" scope="col">Items</th></tr></thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <th scope="row">#{{ order.order_id }}</th>
+                                    <td>{{ order.order_date.strftime("%Y-%m-%d") if order.order_date.strftime is defined else order.order_date }}</td>
+                                    <td><span class="category-pill">{{ order.order_status|title }}</span></td>
+                                    <td>{{ order.region }}</td>
+                                    <td class="text-end">{{ "{:,}".format(order.item_count) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state"><strong>No orders found</strong><span>Try changing or clearing the filters.</span></div>
+                    {% endif %}
+                    <nav class="page-controls" aria-label="Order pages">
+                        {% if offset > 0 %}
+                        <a class="button-primary button-secondary" href="{{ url_for('orders_page', limit=limit, offset=[offset-limit, 0]|max, start_date=start_date, end_date=end_date, status=selected_status, region=selected_region) }}">Previous</a>
+                        {% endif %}
+                        <span>Showing {{ offset + 1 if order_count else 0 }}–{{ [offset + orders|length, order_count]|min }} of {{ order_count }}</span>
+                        {% if offset + orders|length < order_count %}
+                        <a class="button-primary button-secondary" href="{{ url_for('orders_page', limit=limit, offset=offset+limit, start_date=start_date, end_date=end_date, status=selected_status, region=selected_region) }}">Next</a>
+                        {% endif %}
+                    </nav>
+                </article>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

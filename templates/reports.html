@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Reports | E-Commerce BI{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <div class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-context"><span class="status-dot"></span> Sales reporting</div>
+            <div class="topbar-date">Database-backed</div>
+        </header>
+        <div class="dashboard-content">
+            <section class="welcome-row">
+                <div>
+                    <p class="eyebrow mb-2">WORKSPACE <span>/</span> REPORTS</p>
+                    <h1>Reports</h1>
+                    <p class="welcome-subtitle">Export eligible sales lines using the same date and dimension filters as the dashboard.</p>
+                </div>
+            </section>
+
+            <form class="filter-panel dashboard-filters" method="get" action="{{ url_for('reports_page') }}">
+                <label class="filter-field">
+                    <span>Date from</span>
+                    <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
+                </label>
+                <label class="filter-field">
+                    <span>Date to</span>
+                    <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+                </label>
+                <label class="filter-field">
+                    <span>Category</span>
+                    <select class="form-select" name="category">
+                        <option value="">All categories</option>
+                        {% for category in filter_options.categories %}
+                        <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="filter-field">
+                    <span>Region</span>
+                    <select class="form-select" name="region">
+                        <option value="">All regions</option>
+                        {% for region in filter_options.regions %}
+                        <option value="{{ region }}" {% if region == selected_region %}selected{% endif %}>{{ region }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button class="button-primary filter-submit" type="submit">Update report</button>
+            </form>
+
+            <section class="data-section" aria-label="Sales report export">
+                <div class="section-heading">
+                    <div><h2>Sales report</h2><p>Current filtered net sales: ${{ "{:,.2f}".format(analytics.summary.net_sales) }}</p></div>
+                </div>
+                <article class="data-card report-card">
+                    <div>
+                        <h3>Filtered sales CSV</h3>
+                        <p>The CSV contains the existing sales export columns and excludes cancelled orders, matching the dashboard’s reporting rules.</p>
+                    </div>
+                    <a class="button-primary" href="{{ url_for('export_sales_csv', start_date=start_date or none, end_date=end_date or none, category=selected_category or none, region=selected_region or none) }}">Download sales CSV</a>
+                </article>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

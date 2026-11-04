@@ -121,6 +121,61 @@ def fetch_product_count(category=None):
     return int(rows[0]["product_count"])
 
 
+def fetch_orders(
+    start_date=None,
+    end_date=None,
+    status=None,
+    region=None,
+    limit=100,
+    offset=0,
+):
+    """Return a page of orders with their item counts and the total matching count."""
+    conditions = []
+    params = []
+    if start_date is not None:
+        conditions.append("o.order_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        conditions.append("o.order_date <= %s")
+        params.append(end_date)
+    if status is not None:
+        conditions.append("o.order_status = %s")
+        params.append(status)
+    if region is not None:
+        conditions.append("o.region = %s")
+        params.append(region)
+
+    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+    rows = fetch_all(
+        """
+        SELECT o.order_id, o.order_status, o.order_date, o.region,
+               COUNT(oi.order_item_id) AS item_count
+        FROM orders AS o
+        LEFT JOIN order_items AS oi ON oi.order_id = o.order_id
+        """
+        + where_clause
+        + """
+        GROUP BY o.order_id, o.order_status, o.order_date, o.region
+        ORDER BY o.order_date DESC, o.order_id DESC
+        LIMIT %s OFFSET %s
+        """,
+        (*params, limit, offset),
+    )
+    count_rows = fetch_all(
+        "SELECT COUNT(*) AS order_count FROM orders AS o" + where_clause,
+        tuple(params),
+    )
+    return rows, int(count_rows[0]["order_count"])
+
+
+def fetch_order_statuses():
+    """Return order status values actually present in the database."""
+    rows = fetch_all(
+        "SELECT DISTINCT order_status FROM orders ORDER BY order_status"
+    )
+    return [row["order_status"] for row in rows]
+
+
 def add_product(product_name, category, unit_price):
     """Insert a new product row and return its generated identifier."""
     cleaned_name = (product_name or "").strip()

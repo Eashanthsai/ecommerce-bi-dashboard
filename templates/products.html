@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Products | E-Commerce BI{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <div class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-context"><span class="status-dot"></span> Catalog management</div>
+            <div class="topbar-date">{{ "{:,}".format(product_count) }} products</div>
+        </header>
+        <div class="dashboard-content">
+            <section class="welcome-row">
+                <div>
+                    <p class="eyebrow mb-2">WORKSPACE <span>/</span> PRODUCTS</p>
+                    <h1>Products</h1>
+                    <p class="welcome-subtitle">Browse your current product catalog and add products.</p>
+                </div>
+                <a class="button-primary" href="{{ url_for('add_product_form') }}">Add product</a>
+            </section>
+
+            <section class="data-section" aria-label="Products">
+                <div class="section-heading">
+                    <div><h2>Product catalog</h2><p>{{ "{:,}".format(product_count) }} products in your database</p></div>
+                </div>
+                <article class="data-card">
+                    {% if products %}
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th scope="col">Product</th><th scope="col">Category</th><th class="text-end" scope="col">Unit price</th></tr></thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <th scope="row">{{ product.product_name }}</th>
+                                    <td><span class="category-pill">{{ product.category }}</span></td>
+                                    <td class="text-end amount-cell">${{ "{:,.2f}".format(product.unit_price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state"><strong>No products found</strong><span>Add a product to your catalog to get started.</span></div>
+                    {% endif %}
+                    <nav class="page-controls" aria-label="Product pages">
+                        {% if offset > 0 %}
+                        <a class="button-primary button-secondary" href="{{ url_for('products_page', limit=limit, offset=[offset-limit, 0]|max) }}">Previous</a>
+                        {% endif %}
+                        <span>Showing {{ offset + 1 if product_count else 0 }}–{{ [offset + products|length, product_count]|min }} of {{ product_count }}</span>
+                        {% if offset + products|length < product_count %}
+                        <a class="button-primary button-secondary" href="{{ url_for('products_page', limit=limit, offset=offset+limit) }}">Next</a>
+                        {% endif %}
+                    </nav>
+                </article>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

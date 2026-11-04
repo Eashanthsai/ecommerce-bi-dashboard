@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 app:app
     healthCheckPath: /health
     envVars:
       - key: FLASK_SECRET_KEY
@@ -19,3 +19,15 @@ services:
         sync: false
       - key: DB_NAME
         sync: false
+      - key: DB_SSL_CA
+        sync: false
+      - key: DB_SSL_VERIFY_CERT
+        sync: false
+      - key: DB_SSL_VERIFY_IDENTITY
+        sync: false
+      - key: DASHBOARD_USERNAME
+        sync: false
+      - key: DASHBOARD_PASSWORD_HASH
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
